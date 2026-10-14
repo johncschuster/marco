@@ -36,6 +36,8 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-}
       # Optional: session cookie key (default: generated and stored in /data/secrets.json).
       SESSION_SECRET: ${SESSION_SECRET:-}
+      # Optional (fork): comma-separated origins allowed to show the display page in an iframe, e.g. http://192.168.0.25:8080
+      EMBED_ORIGINS: ${EMBED_ORIGINS:-}
       # Optional: this server's LAN address for the display's welcome QR code (the container cannot see it).
       LAN_ADDRESS: ${LAN_ADDRESS:-}
       # Optional: poll = displays check for changes every 90 s instead of keeping /api/stream open (for proxies that
