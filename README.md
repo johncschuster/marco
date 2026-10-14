@@ -1041,6 +1041,7 @@ can also send at most 500 alerts and commands a day through its tokens.
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | none | Google OAuth client ([guide](#connecting-google-calendar)) |
 | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | none | Microsoft Entra app for Outlook and Microsoft 365 calendars ([guide](#connecting-outlook-hotmail-or-microsoft-365)) |
 | `NODE_EXTRA_CA_CERTS` | none | Extra CA certificates for iCal feeds with a private CA |
+| `EMBED_ORIGINS` | none | Comma-separated origins (e.g. `http://192.168.0.27:8080`) allowed to show the display page (`/`, `/d/<key>`) in an iframe. The admin and all other pages stay same-origin only. Unset = no change |
 | `MARCO_LIVE` | `sse` | `poll` = displays get no `/api/stream` connection and poll `/api/display/poll` instead (every 30 s, every 5 s while *Connected screens* is open). Alerts and display commands (refresh, night mode, identify) still arrive, a little later than over the stream. Useful behind a proxy that buffers server-sent events |
 | `TZ` | the zone set in *Date & time* (follows changes live) | Process time zone (used for "floating" iCal times). Setting it here pins it |
 | `MARCO_UPDATE_CHECK` | on | `0` = never ask GitHub for a newer release (no update banner) |

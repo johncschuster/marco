@@ -30,6 +30,17 @@ const FRAME_DESTS = new Set(['iframe', 'frame', 'embed', 'object', 'fencedframe'
 const PREVIEW_PAGE = /^\/(?:index\.html)?$|^\/d\/[^/]+$/;
 
 /**
+ * EMBED_ORIGINS (comma-separated origins, e.g. http://192.168.0.27:8080): other sites that may frame the display page
+ * (GET /, /index.html, /d/<key>) and nothing else: the admin and every other page stay same-origin only. Unset (the
+ * default) = framing exactly as before. Entries that are not a plain http(s) origin are ignored, so the value can never
+ * inject into the CSP header.
+ */
+export function embedOrigins() {
+  return String(process.env.EMBED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/+$/, ''))
+    .filter((o) => /^https?:\/\/[A-Za-z0-9.:[\]-]+$/.test(o));
+}
+
+/**
  * 403 for a request loaded into a frame (Sec-Fetch-Dest), except the admin preview of a display: GET /, /index.html
  * or /d/<key> with ?preview=1, asked for by this origin itself (Sec-Fetch-Site same-origin). Browsers without
  * Sec-Fetch-* headers are let through (frame-ancestors still applies).
@@ -38,6 +49,7 @@ export function frameGuard(req, res, next) {
   const dest = req.get('sec-fetch-dest');
   if (!dest || !FRAME_DESTS.has(dest)) return next();
   const site = req.get('sec-fetch-site');
+  if (req.method === 'GET' && PREVIEW_PAGE.test(req.path) && embedOrigins().length) return next(); // frame-ancestors decides who
   const preview = req.method === 'GET' && PREVIEW_PAGE.test(req.path) && new URLSearchParams(req.url.split('?')[1] ?? '').get('preview') === '1';
   if (preview && (!site || site === 'same-origin')) return next();
   // the refusal itself runs nothing and gets an opaque origin
@@ -68,8 +80,13 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use((req, res, next) => {
     res.set('referrer-policy', 'no-referrer');
     res.set('x-content-type-options', 'nosniff');
-    res.set('x-frame-options', 'SAMEORIGIN');
-    res.set('content-security-policy', "frame-ancestors 'self'");
+    const embed = req.method === 'GET' && PREVIEW_PAGE.test(req.path) ? embedOrigins() : [];
+    if (embed.length) {
+      res.set('content-security-policy', `frame-ancestors 'self' ${embed.join(' ')}`);
+    } else {
+      res.set('x-frame-options', 'SAMEORIGIN');
+      res.set('content-security-policy', "frame-ancestors 'self'");
+    }
     next();
   });
   // Framing: only the admin's live preview frames this server's pages (frame-ancestors above), and only the display

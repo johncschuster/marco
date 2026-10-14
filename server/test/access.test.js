@@ -791,6 +791,33 @@ test('browser headers: no referrer, nosniff, same-origin framing only, display a
   });
 });
 
+test('EMBED_ORIGINS: only the display page may be framed by the listed origins; unset keeps same-origin framing', async () => {
+  const prev = process.env.EMBED_ORIGINS;
+  try {
+    await withServer(async (ctx) => {
+      const framed = { 'sec-fetch-dest': 'iframe', 'sec-fetch-site': 'same-site' };
+      const display = `/d/${keyOf('kitchen')}`;
+      delete process.env.EMBED_ORIGINS;
+      let r = await ctx.call('GET', display, { headers: framed });
+      assert.equal(r.status, 403, 'unset: a cross-site framed load is refused');
+      process.env.EMBED_ORIGINS = 'http://192.168.0.27:8080/, javascript:alert(1), http://x.test; script-src *';
+      r = await ctx.call('GET', display, { headers: framed });
+      assert.equal(r.status, 200);
+      assert.equal(r.headers.get('x-frame-options'), null);
+      assert.equal(r.headers.get('content-security-policy'), "frame-ancestors 'self' http://192.168.0.27:8080");
+      for (const url of ['/admin/', '/admin/index.html', '/api/health', '/pair']) {
+        r = await ctx.call('GET', url, { headers: framed });
+        assert.equal(r.status, 403, `${url} is never frameable by an embed origin`);
+        r = await ctx.call('GET', url);
+        assert.equal(r.headers.get('x-frame-options'), 'SAMEORIGIN', url);
+        assert.equal(r.headers.get('content-security-policy'), "frame-ancestors 'self'", url);
+      }
+    });
+  } finally {
+    if (prev === undefined) delete process.env.EMBED_ORIGINS; else process.env.EMBED_ORIGINS = prev;
+  }
+});
+
 test('admin CSRF: same-origin only, by Origin and Sec-Fetch-Site; works on the LAN address and through an SSH tunnel', async () => {
   const http = await import('node:http');
   await withServer(async (ctx) => {
