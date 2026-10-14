@@ -805,6 +805,10 @@ test('EMBED_ORIGINS: only the display page may be framed by the listed origins; 
       assert.equal(r.status, 200);
       assert.equal(r.headers.get('x-frame-options'), null);
       assert.equal(r.headers.get('content-security-policy'), "frame-ancestors 'self' http://192.168.0.27:8080");
+      r = await ctx.call('HEAD', display, { headers: framed });
+      assert.equal(r.status, 200, 'HEAD gets the same headers as GET');
+      assert.equal(r.headers.get('x-frame-options'), null);
+      assert.equal(r.headers.get('content-security-policy'), "frame-ancestors 'self' http://192.168.0.27:8080");
       for (const url of ['/admin/', '/admin/index.html', '/api/health', '/pair']) {
         r = await ctx.call('GET', url, { headers: framed });
         assert.equal(r.status, 403, `${url} is never frameable by an embed origin`);

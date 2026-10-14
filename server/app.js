@@ -49,7 +49,7 @@ export function frameGuard(req, res, next) {
   const dest = req.get('sec-fetch-dest');
   if (!dest || !FRAME_DESTS.has(dest)) return next();
   const site = req.get('sec-fetch-site');
-  if (req.method === 'GET' && PREVIEW_PAGE.test(req.path) && embedOrigins().length) return next(); // frame-ancestors decides who
+  if ((req.method === 'GET' || req.method === 'HEAD') && PREVIEW_PAGE.test(req.path) && embedOrigins().length) return next(); // frame-ancestors decides who
   const preview = req.method === 'GET' && PREVIEW_PAGE.test(req.path) && new URLSearchParams(req.url.split('?')[1] ?? '').get('preview') === '1';
   if (preview && (!site || site === 'same-origin')) return next();
   // the refusal itself runs nothing and gets an opaque origin
@@ -80,7 +80,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use((req, res, next) => {
     res.set('referrer-policy', 'no-referrer');
     res.set('x-content-type-options', 'nosniff');
-    const embed = req.method === 'GET' && PREVIEW_PAGE.test(req.path) ? embedOrigins() : [];
+    const embed = (req.method === 'GET' || req.method === 'HEAD') && PREVIEW_PAGE.test(req.path) ? embedOrigins() : [];
     if (embed.length) {
       res.set('content-security-policy', `frame-ancestors 'self' ${embed.join(' ')}`);
     } else {
